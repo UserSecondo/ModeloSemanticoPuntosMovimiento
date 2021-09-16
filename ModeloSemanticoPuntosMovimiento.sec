@@ -1,0 +1,2457 @@
+#MODELO SEMANTICO PARA TRAYECTORIAS DE PUNTOS EN MOVIMIENTO
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------1. IMPORTACIÓN DE LA INFORMACIÓN. (CARTOGRAFÍA BASE, TRAYECTORIA CRUDA Y GENERACIÓN DE PUNTOS DE TRAYECTORIA).---------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Crear y Abrir la Base de Datos.
+
+create database MODELOTR2
+open database MODELOTR2
+open database bdbtrayectoria 
+
+#Generación de una relación vacia
+
+let Trayectoria_SITP = [const rel(tuple([
+  Tipo: string,
+  Fecha: string,
+  UTC: string,
+  Latitud: real, 
+  Longitud: real, 
+  Altitud: int
+])) 
+value ()]
+
+#Total runtime ...   Times (elapsed / cpu): 0.04941sec / 0.05sec = 0.9882
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Cargue de datos crudos.
+let Crudo = Trayectoria_SITP csvimport['../bin/Trayectoria.csv', 1, "#", ","] consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.145894sec / 0.15sec = 0.972627
+#4089 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de instantes y puntos basados en los datos cargados en la tabla crudo.
+
+let PuntosTrayectoria =  Crudo feed 
+  extend[
+    I: str2instant(.Fecha + "-" + .UTC), 
+    P: makepoint(.Longitud, .Latitud)] 
+	sortby[Fecha asc, I asc]
+  addcounter[Id, 1]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 0.178658sec / 0.17sec = 1.05093
+#4089 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile de Seguridad Publica en Bogotá-(Tipo Point).
+
+let SeguridadPublicaBogota = dbimport2('/home/secondo/shp_base/SeguridadPublica.dbf') shpimport2('/home/secondo/shp_base/SeguridadPublica.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.10091sec / 0.08sec = 1.26137
+#33 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile de Entidades Prestadora de Salud-(Tipo Point).
+
+let EntidadPrestadoraSalud = dbimport2('/home/secondo/shp_base/EPS.dbf') shpimport2('/home/secondo/shp_base/EPS.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.054493sec / 0.05sec = 1.08986
+#142 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile Localidades-(Tipo Region).
+
+let Localidades = dbimport2('/home/secondo/shp_base/Localidades.dbf') shpimport2('/home/secondo/shp_base/Localidades.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 3.50886sec / 3.49sec = 1.0054
+#20 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile de Barrio Catastral-(Tipo Region).
+
+let BarrioCatastral = dbimport2('/home/secondo/shp_base/BarrioCatastral.dbf') shpimport2('/home/secondo/shp_base/BarrioCatastral.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 6.2181sec / 6.2sec = 1.00292
+#933 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del  shapefile de Homicidios cometidos como delito de Alto Impacto-(Tipo Region.
+
+let Homicidios = dbimport2('/home/secondo/shp_base/Homicidios.dbf') shpimport2('/home/secondo/shp_base/Homicidios.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 6.85501sec / 6.83sec = 1.00366
+#114 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile de Hurto a Automotores cometidos como delito de Alto Impacto-(Tipo Region).
+
+let HurtoAutomotores = dbimport2('/home/secondo/shp_base/HurtoAutomotores.dbf') shpimport2('/home/secondo/shp_base/HurtoAutomotores.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 6.66833sec / 6.66sec = 1.00125
+#114 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile de Hurto a Bicicletas cometidos como delito de Alto Impacto-(Tipo Region).
+
+let HurtoBicicletas = dbimport2('/home/secondo/shp_base/HurtoBicicletas.dbf') shpimport2('/home/secondo/shp_base/HurtoBicicletas.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Times (elapsed / cpu): 6.06904sec / 6.05sec = 1.00315
+#114 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del  shapefile de Hurto a Celulares cometidos como delito de Alto Impacto-(Tipo Region).
+
+let HurtoCelulares = dbimport2('/home/secondo/shp_base/HurtoCelulares.dbf') shpimport2('/home/secondo/shp_base/HurtoCelulares.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 6.23327sec / 6.22sec = 1.00213
+#114 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile de Hurto a Bicicletas cometidos como delito de Alto Impacto-(Tipo Region).
+
+let HurtoEF = dbimport2('/home/secondo/shp_base/HurtoEF.dbf') shpimport2('/home/secondo/shp_base/HurtoEF.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 6.11214sec / 6.08sec = 1.00529
+#114 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile de Hurto a Motos cometidos como delito de Alto Impacto-(Tipo Region)
+
+let HurtoMotocicletas = dbimport2('/home/secondo/shp_base/HurtoMotocicletas.dbf') shpimport2('/home/secondo/shp_base/HurtoMotocicletas.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 6.28422sec / 6.28sec = 1.00067
+#114 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargaue del shapefile de Hurto a Personas cometidos como delito de Alto Impacto-(Tipo Region)
+
+let HurtoPersonas = dbimport2('/home/secondo/shp_base/HurtoPersonas.dbf') shpimport2('/home/secondo/shp_base/HurtoPersonas.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 6.14609sec / 6.13sec = 1.00262
+#114 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile de Hurto a Residencias cometidos como delito de Alto Impacto-(Tipo Region)
+
+let HurtoResidencias = dbimport2('/home/secondo/shp_base/HurtoResidencias.dbf') shpimport2('/home/secondo/shp_base/HurtoResidencias.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 6.15653sec / 6.14sec = 1.00269
+#114 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile de Hurto al comercio cometidos como delito de Alto Impacto-(Tipo Region)
+
+let HurtoSectorComercio = dbimport2('/home/secondo/shp_base/HurtoSectorComercio.dbf') shpimport2('/home/secondo/shp_base/HurtoSectorComercio.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 8.1218sec / 8.06sec = 1.00767
+#114 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Cargue del shapefile de Lesiones personales cometidos como delito de Alto Impacto-(Tipo Region)
+
+let LesionesPersonales = dbimport2('/home/secondo/shp_base/LesionesPersonales.dbf') shpimport2('/home/secondo/shp_base/LesionesPersonales.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 7.19001sec / 7.18sec = 1.00139
+#114 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#cargue shapefile de la Malla Vial de Bogotá Final -Tipo Linea
+
+let MallaVial = dbimport2('/home/secondo/shp_base/Malla_Vial.dbf') shpimport2('/home/secondo/shp_base/Malla_Vial.shp') namedtransformstream[GeoData] obojoin filter[isdefined(bbox(.GeoData))] validateAttr trimAllUndef consume
+#Total runtime ...   Times (elapsed / cpu): 3.73406sec / 3.71sec = 1.00648
+#21228 registros.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------2. GENERACIÓN DE OBJETOS TIPO RED (JNETWORK). ----------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Construcción de una JNetwork a partir de datos de calles.
+
+let CarreterasTmp =
+  MallaVial feed
+    projectextend[GeoData; VMax: ifthenelse(.Vmax > 0.0, .Vmax, 0.01)]
+    projectextendstream[VMax; CurvaCarretera: .GeoData polylines[FALSE]]
+    projectextend[VMax; CarreteraC: fromline(.CurvaCarretera)]
+    projectextend[VMax; Longitud: size(.CarreteraC), CurvaCarretera: .CarreteraC]
+    sortby[Longitud desc, VMax asc, CurvaCarretera asc]
+    addcounter[Rid, 1]
+    project[Rid, CurvaCarretera, VMax, Longitud]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 7.53583sec / 7.52sec = 1.00211
+#21228 registros.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Calculo de uniones de jnetwork en función de los datos de carreteras
+
+#getstartpoint=Devuelve el punto inicial (tipo point) de una línea simple.
+#getendpointt=Devuelve el punto final (tipo point) de una línea simple.
+
+let PuntoFinalCarretera =
+  CarreterasTmp feed
+    projectextend[Rid, CurvaCarretera; PuntoPartida: getstartpoint(.CurvaCarretera),
+                                  PuntoFinal: getendpoint(.CurvaCarretera)]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 1.66637sec / 1.65sec = 1.00992
+#21228 registros.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Desarrollo del respectivo cruce de carreteras
+
+let CruceCarreteras =
+  CarreterasTmp feed
+    project[Rid, CurvaCarretera] {r1}
+  CarreterasTmp feed
+    project[Rid, CurvaCarretera] {r2}
+  itSpatialJoin[CurvaCarretera_r1, CurvaCarretera_r2, 4,8]
+    filter [.Rid_r1 < .Rid_r2]
+    filter [.CurvaCarretera_r1 intersects1 .CurvaCarretera_r2]
+    projectextendstream[Rid_r1, Rid_r2, CurvaCarretera_r1,
+      CurvaCarretera_r2; CRUCE: components(crossings1(.CurvaCarretera_r1,
+                                                    .CurvaCarretera_r2))]
+    projectextend[;R1id: .Rid_r1,
+                   R1Pos: atpoint(.CurvaCarretera_r1, get(.CRUCE, 0)),
+                   R2id: .Rid_r2,
+                   R2Pos: atpoint(.CurvaCarretera_r2, get(.CRUCE, 0)),
+                   PosEspacial: get(.CRUCE, 0)]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 4.2533sec / 4.23sec = 1.00551
+#45733 registros
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Con el operador concat se concatenan dos puntos, el punto inicial y final del punto creada en la relacion PuntoFinalCarretera, luego de esto se concatena el valor  PosEspacial determinado en la relacion CruceCarreteras
+#al final se le adiciona un contador
+
+let UnionesTmp =
+  ( ( PuntoFinalCarretera feed
+        projectextend [; Pos: .PuntoPartida])
+    ( PuntoFinalCarretera feed
+        projectextend [; Pos: .PuntoFinal])
+    concat)
+  ( CruceCarreteras feed
+      projectextend[; Pos: .PosEspacial])
+  concat
+    sortby[Pos]
+    rdup
+    addcounter[Jid, 1]
+    project[Jid, Pos]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 1.35343sec / 1.36sec = 0.995171
+#15357 registros.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Concatenación de las carreteras con los cruces de la carretera, para realizar esto se usan las dos relacionas previamente creadas CarreterasTmp y UnionesTmp..
+
+let CarreterasTmp2 =
+  CarreterasTmp feed
+  UnionesTmp feed
+  itSpatialJoin[CurvaCarretera, Pos, 4,8]
+    filter[.Pos inside .CurvaCarretera]
+    projectextend[Rid, VMax, Longitud, CurvaCarretera,
+                  Jid; PosEspacial: .Pos,
+                       CarreteraPos: atpoint(.CurvaCarretera,.Pos)]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 4.25781sec / 4.2sec = 1.01376
+#43168 registro.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Creación de nueva relacion denominada CarreterasTmp3 la cual aplica dos filtros a la relacion anterior.
+
+let CarreterasTmp3 =
+  CarreterasTmp2 feed
+    filter [iscycle(.CurvaCarretera)]
+    filter [.CarreteraPos = 0.0]
+    projectextend[Rid, VMax, Longitud, CurvaCarretera, Jid,
+                  PosEspacial; CarreteraPos: size(.CurvaCarretera)]
+consume;
+#Total runtime ...   Times (elapsed / cpu): 0.253093sec / 0.24sec = 1.05455
+#0 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let CarreterasTmp4 =
+  CarreterasTmp2 feed
+    filter [iscycle(.CurvaCarretera)]
+    filter [.CarreteraPos = size(.CurvaCarretera)]
+    projectextend[Rid, VMax, Longitud, CurvaCarretera, Jid, PosEspacial; CarreteraPos: 0.0]
+consume;
+#Total runtime ...   Times (elapsed / cpu): 0.241532sec / 0.23sec = 1.05014
+#0 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#El operador createlist Recopila los valores de un flujo de tipo T en una sola lista del tipo de datos de lista correspondiente.
+
+let CarreterasTmp5 =
+  ( ( CarreterasTmp3 feed)
+    ( CarreterasTmp4 feed)
+    concat)
+  ( CarreterasTmp2 feed)
+  concat
+  sortby[Rid, CarreteraPos, Jid, PosEspacial, VMax, Longitud, CurvaCarretera]
+  rdup
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 6.0016sec / 5.91sec = 1.0155
+#43168 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ListaCrucesCarretera =
+  CarreterasTmp5 feed
+    project[Rid, Jid]
+    sortby [Rid, Jid]
+    rdup
+    groupby[Rid; ListaConexiones: group feed projecttransformstream[Jid] createlist]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 1.73612sec / 1.73sec = 1.00354
+#21229 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#El operador createrloc crea o genera rloc (tipo ruta) a partir del id de ruta, la posición en la ruta y el valor lateral.
+
+let ListaRutasCruce =
+  CarreterasTmp5 feed
+    projectextend[Jid; RLoc: createrloc(.Rid,
+                                        .CarreteraPos,
+                                        [const jdirection value(Both)])]
+    sortby[Jid, RLoc]
+    rdup
+    groupby[Jid; RLocLista: group feed projecttransformstream[RLoc] createlist]
+consume;
+
+# Total runtime ...   Times (elapsed / cpu): 1.5501sec / 1.54sec = 1.00656
+# 15357 registos
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Calculo de Secciones.
+
+let SeccionesTmp =
+   CarreterasTmp5 feed
+     project[Rid, CurvaCarretera, PosEspacial]
+     sortby[Rid, CurvaCarretera, PosEspacial]
+     groupby[Rid, CurvaCarretera; DivisionPuntos: group feed
+                                                projecttransformstream[PosEspacial]
+                                                collect_points[TRUE]]
+     projectextendstream[Rid; SecciondeCurva: splitslineatpoints(.CurvaCarretera,
+                                                            .DivisionPuntos)]
+     extend[PuntoPartida: getstartpoint(.SecciondeCurva),
+            PuntoFinal: getendpoint(.SecciondeCurva),
+            Longitud: size(.SecciondeCurva),
+            JDir: [const jdirection value(Both)]]
+   UnionesTmp feed {j1}
+   itSpatialJoin[PuntoPartida,Pos_j1,4,8]
+     filter[.PuntoPartida = .Pos_j1]
+     projectextend[Rid, SecciondeCurva, PuntoFinal, Longitud, JDir; InicioJid: .Jid_j1]
+   UnionesTmp feed {j2}
+   itSpatialJoin[PuntoFinal,Pos_j2,4,8]
+     filter[.PuntoFinal = .Pos_j2]
+     projectextend[Rid, SecciondeCurva, Longitud, JDir, InicioJid; FinalJid: .Jid_j2]
+   CarreterasTmp5 feed {r1}
+   hashjoin[Rid, Rid_r1]
+     filter [.Rid = .Rid_r1]
+     filter [.InicioJid = .Jid_r1]
+     projectextend[Rid, SecciondeCurva, Longitud, JDir, InicioJid,
+                   FinalJid; VMax: .VMax_r1,
+                           InicioPos: .CarreteraPos_r1]
+   CarreterasTmp5 feed {r2}
+   hashjoin[Rid, Rid_r2]
+     filter [.Rid = .Rid_r2]
+     filter [.FinalJid = .Jid_r2]
+     projectextend[Rid, SecciondeCurva, Longitud, JDir, InicioJid, FinalJid, VMax,
+                   InicioPos; FinPos: .CarreteraPos_r2]
+     sortby[Rid, InicioJid, FinalJid, Longitud, VMax, JDir, SecciondeCurva, InicioPos, FinPos]
+     filter[.InicioPos < .FinPos]
+     rdup
+     addcounter[Sid,1]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 29.2274sec / 29.12sec = 1.00369
+#21938 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Calculo de Lista de Secciones
+
+let ListaSegmentosCarretera =
+  SeccionesTmp feed
+    project[Rid, Sid]
+    sortby[Rid, Sid]
+    groupby[Rid; ListSect: group feed projecttransformstream[Sid] createlist]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 1.29858sec / 1.28sec = 1.01452
+#21228 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let IntervalosSegmentosCarretera =
+  SeccionesTmp feed
+    projectextend [Sid; RInt: createrint(.Rid, .InicioPos, .FinPos, .JDir)]
+    sortby [Sid, RInt]
+    groupby [Sid; ListRInt: group feed projecttransformstream[RInt] createlist]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 1.35815sec / 1.36sec = 0.998643
+#21938 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ListaCrucesEntradaSalida =
+  ( SeccionesTmp feed
+      projectextend [Sid; Jid: .InicioJid])
+  ( SeccionesTmp feed
+      projectextend [Sid; Jid: .FinalJid])
+  concat
+    sortby [Jid, Sid]
+    rdup
+    groupby[Jid; ListaEntradaSalidaSegmento: group feed projecttransformstream[Sid] createlist]
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 1.64447sec / 1.63sec = 1.00887
+#15357 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Creación de relaciones de entrada para la creación de jnetwork
+
+let EntradaCruce =
+  UnionesTmp feed
+  ListaRutasCruce feed {r1}
+  hashjoin[Jid, Jid_r1]
+    filter [.Jid = .Jid_r1]
+    projectextend [Jid, Pos; ListaRLoc: .RLocLista_r1]
+  ListaCrucesEntradaSalida feed {sl}
+  hashjoin[Jid, Jid_sl]
+    filter [.Jid = .Jid_sl]
+    projectextend[Jid, Pos, ListaRLoc; ListaEntradaSegmento: .ListaEntradaSalidaSegmento_sl,
+                                      ListaSalidaSegmento: .ListaEntradaSalidaSegmento_sl]
+    sortby[Jid, Pos, ListaRLoc, ListaEntradaSegmento, ListaSalidaSegmento]
+    rdup
+consume;
+#Total runtime ...   Times (elapsed / cpu): 1.27816sec / 1.25sec = 1.02253
+#15357 registro
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let EntradaSegmento =
+  SeccionesTmp feed
+  IntervalosSegmentosCarretera feed {ri}
+  hashjoin[Sid, Sid_ri]
+    filter [.Sid = .Sid_ri]
+    projectextend[Sid, SecciondeCurva, InicioJid, FinalJid, JDir, VMax,
+                  Longitud; ListRint: .ListRInt_ri]
+  EntradaCruce feed {j1}
+  hashjoin[InicioJid, Jid_j1]
+    filter[.InicioJid = .Jid_j1]
+    projectextend[Sid, SecciondeCurva, InicioJid, FinalJid, JDir, VMax, Longitud,
+                  ListRint; ListAdjSegmentoAbajo: .ListaSalidaSegmento_j1,
+                            ListRevAdjSegmentoArriba: .ListaEntradaSegmento_j1]
+  EntradaCruce feed {j2}
+  hashjoin[FinalJid, Jid_j2]
+    filter[.FinalJid = .Jid_j2]
+    projectextend[Sid, SecciondeCurva, InicioJid, FinalJid, JDir, VMax, Longitud,
+                  ListRint, ListAdjSegmentoAbajo,
+                  ListRevAdjSegmentoArriba; ListAdjSegmentoArriba: .ListaSalidaSegmento_j2,
+                                    ListRevAdjSegmentoAbajo: .ListaEntradaSegmento_j2]
+    project[Sid, SecciondeCurva, InicioJid, FinalJid, JDir, VMax, Longitud, ListRint,
+            ListAdjSegmentoArriba, ListAdjSegmentoAbajo, ListRevAdjSegmentoArriba, ListRevAdjSegmentoAbajo]
+    sortby [Sid, InicioJid, FinalJid, SecciondeCurva, JDir, VMax, Longitud, ListRint,
+            ListAdjSegmentoArriba, ListAdjSegmentoAbajo, ListRevAdjSegmentoArriba, ListRevAdjSegmentoAbajo]
+    rdup
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 9.82889sec / 9.8sec = 1.00295
+#21938 registro
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let InCarretera =
+  CarreterasTmp feed
+  ListaCrucesCarretera feed {j1}
+  hashjoin[Rid, Rid_j1]
+    filter [.Rid = .Rid_j1]
+    projectextend[Rid, Longitud; ListaUniones: .ListaConexiones_j1]
+  ListaSegmentosCarretera feed {s1}
+  hashjoin[Rid, Rid_s1]
+    projectextend[Rid, ListaUniones, Longitud; ListSect: .ListSect_s1]
+    project[Rid, ListaUniones, ListSect, Longitud]
+    sortby [Rid, ListaUniones, ListSect, Longitud]
+    rdup
+consume;
+
+#Total runtime ...   Times (elapsed / cpu): 1.45796sec / 1.44sec = 1.01248
+#21228 registro
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Crear jnetwork
+
+query createjnet("JBNet",
+                 1.0,
+                 EntradaCruce,
+                 EntradaSegmento,
+                 InCarretera);		 		 
+
+#Total runtime ...   Times (elapsed / cpu): 51.203sec / 49.69sec = 1.03045
+			 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------3. GENERACIÓN DE ENRIQUECIMIENTO SEMÁNTICO POR GEOPROCESAMIENTO CON GEOMETRÍAS POLIGONALES y PUNTUALES----------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Union espacial entre la trayectoria realizada y los datos de homicidios presentes en la ciudad de bogota.
+
+let UnionEspacial1 =
+PuntosTrayectoria feed {p}
+Homicidios feed {d}
+itSpatialJoin [P_p, GeoData_d, 4, 8]
+filter[.P_p ininterior .GeoData_d]
+projectextend[; Punto: .P_p, NomUPZ: .CMNOMUPLA_d, Instante: .I_p ]
+sortby[Instante asc]
+consume
+
+#No hay necesidad de crear varias uniones para el tema de delito de alto impacto por que todos tiene la mima estrutura geoespacial y el nombre del atriburto con el nombre de la upz es el mismo.
+#Total runtime ...   Times (elapsed / cpu): 0.980112sec / 0.96sec = 1.02095
+#4067 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Union espacial entre la trayectoria realizada y las localidades presentes en la ciudad de bogota.
+
+let UnionEspacial2 =
+PuntosTrayectoria feed {p}
+Localidades feed {d}
+itSpatialJoin [P_p, GeoData_d, 4, 8]
+filter[.P_p ininterior .GeoData_d]
+projectextend[; Punto: .P_p, NomLoc: .NOMBRE_d, Instante: .I_p ]
+sortby[Instante asc]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.565765sec / 0.56sec = 1.01029
+#4089 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Union espacial entre la trayectoria realizada y los datos de Barrios Catastrales presentes en la ciudad de bogota.
+
+let UnionEspacial3 =
+PuntosTrayectoria feed {p}
+BarrioCatastral feed {d}
+itSpatialJoin [P_p, GeoData_d, 4, 8]
+filter[.P_p ininterior .GeoData_d]
+projectextend[; Punto: .P_p, NomBarr: .NOMBRE_d, Instante: .I_p ]
+sortby[Instante asc]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.599651sec / 0.59sec = 1.01636
+#4090 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Adición de los puntos de la trayectoria a la informacoin asociada a las estaciones de policia mas cercanas.
+
+let Distcorta =
+PuntosTrayectoria feed {x}
+SeguridadPublicaBogota feed {y} product 
+projectextend[;Distancias1: distanceOrthodrome(.P_x, .GeoData_y), Geometria: .P_x, Identificador: .Id_x, Inst: .I_x]
+groupby[Identificador, Geometria, Inst; Mendist: group feed min[Distancias1]]
+sortby[Identificador asc]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 1.02269sec / 1.03sec = 0.992901
+#4089 registros
+
+let Distancias =
+PuntosTrayectoria feed {x}
+SeguridadPublicaBogota feed {y} product 
+projectextend[;Estacion: .NOMBRE_y, Distancias: distanceOrthodrome(.P_x, .GeoData_y), Geometria: .P_x, Correo: .CORREO_y, Telefono: .NUMERO_y, Direccion: .DIRECCION_y,Identificador: .Id_x]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 8.69208sec / 8.64sec = 1.00603
+#134937 registros
+
+   
+let CAICercano=
+  Distcorta feed {x}
+  Distancias feed {y}
+  hashjoin[Mendist_x, Distancias_y, 99997]
+  projectextend[;Identificador: .Identificador_x, Estacion: .Estacion_y, Correo: .Correo_y, Telefono: .Telefono_y, Direccion:.Direccion_y, Recorrido:.Mendist_x, Geometria: .Geometria_x, Instante: .Inst_x] 
+  sortby[Identificador]
+  krdup[Identificador]  
+  consume
+  
+#Total runtime ...   Times (elapsed / cpu): 2.35918sec / 2.35sec = 1.00391
+#4089 registros
+  
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Adición de los puntos de la trayectoria a la informacoin asociada a las EPS mas cercanas.
+
+let Distcorta2 =
+PuntosTrayectoria feed {x}
+EntidadPrestadoraSalud feed {y} product 
+projectextend[;Recorrido: distanceOrthodrome(.P_x, .GeoData_y), Geometria: .P_x, Identificador: .Id_x, Inst: .I_x]
+groupby[Identificador, Geometria, Inst; Mendist: group feed min[Recorrido]]
+sortby[Identificador asc]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 3.59183sec / 3.59sec = 1.00051
+#4089 registros
+
+let Distancias2 =
+PuntosTrayectoria feed {x}
+EntidadPrestadoraSalud feed {y} product 
+projectextend[;Eps: .NOMBRE_y, Recorrido: distanceOrthodrome(.P_x, .GeoData_y), Geometria: .P_x, Direccion: .DIRECCI__N_y, Telefono: .TELEFONO_y, Nit: .NIT_y,Identificador: .Id_x]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 1:56min (115.837sec) /113.8sec = 1.0
+#580638 registros
+
+let EPSCercana=
+  Distcorta2 feed {x}
+  Distancias2 feed {y}
+  hashjoin[Mendist_x, Recorrido_y, 99997]
+  projectextend[;Identificador: .Identificador_x, Eps: .Eps_y, Direccion: .Direccion_y, Telefono: .Telefono_y, Nit:.Nit_y, Recorrido:.Mendist_x, Geometria: .Geometria_x, Instante: .Inst_x] 
+  sortby_old[Identificador]
+  krdup[Identificador]  
+  consume
+
+#Total runtime ...   Times (elapsed / cpu): 6.06224sec / 6.05sec = 1.00202
+#4089 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------#4. GENERACIÓN DE TRAYECTORIA.----------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Desarollo de una trayectoria general asociada a todos los puntos de trayectoria
+
+let Trayectoria_IDA_SITP =  Crudo feed 
+  extend[
+    I: str2instant(.Fecha + "-" + .UTC), 
+    P: makepoint(.Longitud, .Latitud)] 
+  sortby[Fecha asc, I asc]
+  groupby[Fecha
+  ; TrayectoIDA: group feed approximate[I, P] ]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.317078sec / 0.31sec = 1.02283
+#1 registros
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Creación de la trayectoria asociada a la disposicion geometrica de los shape que almacenan los delitos de alto impacto.
+
+let TrayectoriaUPZ = UnionEspacial1 feed 
+  groupby[NomUPZ
+  ; TrayectoIDA: group feed approximate[Instante, Punto] ]
+projectextend[NomUPZ,TrayectoIDA;InstInic: inst(initial(.TrayectoIDA)), InstFin: inst(final(.TrayectoIDA)) ]
+extend[Vacio: isempty(.InstInic)]
+filter[.Vacio = FALSE]
+sortby[InstInic asc]
+project[NomUPZ,TrayectoIDA,InstInic,InstFin]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.152706sec / 0.15sec = 1.01804
+#23 registros
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Elaboración de la trayectoria asociada a la disposicion geometrica de los shape de localidades.
+
+
+let TrayectoriaLoc = UnionEspacial2 feed 
+  groupby[NomLoc
+  ; TrayectoIDA: group feed approximate[Instante, Punto] ]
+projectextend[NomLoc,TrayectoIDA;InstInic: inst(initial(.TrayectoIDA)), InstFin: inst(final(.TrayectoIDA)) ]
+extend[Vacio: isempty(.InstInic)]
+filter[.Vacio = FALSE]
+sortby[InstInic asc]
+project[NomLoc,TrayectoIDA,InstInic,InstFin]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.114128sec / 0.11sec = 1.03753
+#11 registros
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Elaboración de la trayectoria asociada a la disposicion geometrica de los shape de Barrios Catastrales.
+
+let TrayectoriaBarr = UnionEspacial3 feed 
+  groupby[NomBarr
+  ; TrayectoIDA: group feed approximate[Instante, Punto] ]
+projectextend[NomBarr,TrayectoIDA;InstInic: inst(initial(.TrayectoIDA)), InstFin: inst(final(.TrayectoIDA)) ]
+extend[Vacio: isempty(.InstInic)]
+filter[.Vacio = FALSE]
+sortby[InstInic asc]
+project[NomBarr,TrayectoIDA,InstInic,InstFin]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.14481sec / 0.13sec = 1.11392
+#66 registros
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Elaboración de la trayectoria asociada a la disposicion geometrica de los shape de los CAIs mas cercanos a la trayectoria. 
+
+
+let TrayectoriaCAIC = CAICercano feed 
+  groupby[Estacion
+  ; TrayectoIDA: group feed approximate[Instante, Geometria] ]
+projectextend[Estacion,TrayectoIDA;InstInic: inst(initial(.TrayectoIDA)), InstFin: inst(final(.TrayectoIDA)) ]
+extend[Vacio: isempty(.InstInic)]
+filter[.Vacio = FALSE]
+sortby[InstInic asc]
+project[Estacion,TrayectoIDA,InstInic,InstFin]
+consume
+
+
+#Total runtime ...   Times (elapsed / cpu): 0.18055sec / 0.13sec = 1.3888
+#28 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Elaboración de la trayectoria asociada a la disposicion geometrica de los shape de las EPS mas cercanas a la trayectoria. 
+
+let TrayectoriaEPSC = EPSCercana feed 
+  groupby[Eps
+  ; TrayectoIDA: group feed approximate[Instante, Geometria] ]
+projectextend[Eps,TrayectoIDA;InstInic: inst(initial(.TrayectoIDA)), InstFin: inst(final(.TrayectoIDA)) ]
+extend[Vacio: isempty(.InstInic)]
+filter[.Vacio = FALSE]
+sortby[InstInic asc]
+project[Eps,TrayectoIDA,InstInic,InstFin]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.166714sec / 0.16sec = 1.04196
+#123 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------#5. SEGMENTACIÓN DE TRAYECTORIA.-----------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Proceso de Segmentación de la trayectoria.
+#Mediante la velocidad se establece un etiquetado para cada tramo o fragmento de la trayectoria.
+
+let Segmentacion = Trayectoria_IDA_SITP feed 
+  projectextendstream[Fecha
+  ; Segmento: .TrayectoIDA sim_trips[ [const duration value (0 1000)], 0.041667 , create_geoid("WGS1984")]]
+  addcounter[Identificador, 1]
+  projectextend[Identificador ;Fec: .Fecha, Seg: .Segmento, InstInic: inst(initial(.Segmento)), InstFin: inst(final(.Segmento)), Velocidad: avg_speed(.Segmento)]
+  extend[Estado: ifthenelse(.Velocidad > 0, tolabels("Objeto en Movimiento"), tolabels("Objeto Detenido"))]
+  consume 
+  
+# Times (elapsed / cpu): 0.125042sec / 0.11sec = 1.13675
+#128 registros
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------#6. COINCIDENCIA DE MAPAS-----------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Proceso de coincidencia de mapas con el operador jmapmatchmht.
+
+let CoincidenciaMapas =
+TrayectoriaCAIC feed
+filter [.Estacion = "CAI Galerias"]
+projectextend[; PuntoRed: jmapmatchmht(JBNet, .TrayectoIDA)]
+consume 
+
+#Total runtime ...   Times (elapsed / cpu): 5.73665sec / 5.72sec = 1.00291
+#1 registro
+  
+let CoincidenciaMapasP =
+CoincidenciaMapas feed
+projectextend[; Estatico: fromnetwork(.PuntoRed)]
+extend[Puntos: locations(.Estatico), Periodos: deftime(.Estatico)]
+project[Puntos, Periodos]
+addcounter[Id, 1]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.07654sec / 0.08sec = 0.95675
+#1 registro
+ 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------#7. GENERACIÓN DE ENRIQUECIMIENTO SEMÁNTICO POR GEOPROCESAMIENTO CON GEOMETRÍAS LINEALES.-------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Cruce del punto obtenido en la coincidencia de mapas con la base geografica de vías.
+
+let AdicioninfoVias=
+  CoincidenciaMapasP feed {t}
+  MallaVial feed {k}
+  itSpatialJoin [Puntos_t, GeoData_k, 4, 8]
+  filter[.Puntos_t intersects .GeoData_k]
+    projectextend[Periodos_t; Geometrics: .Puntos_t, VelocidadMax: tolabel(num2string(.Vmax_k)), Id_Calzada: tolabel(num2string(.MVICCALZAD_k)), Id_EjeVial: tolabel(.MVICCAT_k), Clas_Seg_MallaVias: tolabel(.MVITIPO_k), Nom_Via_Princ: tolabel(.MVINOMBRE_k), Nom_Altern_Via: tolabel(.MVINALTERN_k), Mvinprinc: tolabel(.MVINPRINCI_k), Mvingener: tolabel(.MVINGENERA_k), Mvinantig: tolabel(.MVINANTIGU_k), Mvietiqu: tolabel(.MVIETIQUET_k), Mvisv: tolabel(.MVISVIA_k), Mviciv: tolabel(num2string(.MVICIV_k)), Mvicodi: tolabel(num2string(.MVICODIGO_k)), Longitud: tolabel(num2string(.LONGITUD_M_k))]
+addcounter[Identificador, 1]
+ consume;
+ 
+#Total runtime ...   Times (elapsed / cpu): 0.512157sec / 0.47sec = 1.0897
+#7 registros
+ 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------#8. GENERACIÓN DE TRAYECTORIA SIMBÓLICA.------------------------------------------------------------------------------------------------------ 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Hasjoin entre la trayectoria creada y la tabla homicidios por el atributo Nombre de UPZ, permitiendo de esta manera Agrupacionarlos datos de cantidad de homicidios por upz.
+#Generación de Trayectoria Simbolica con los datos de Homicidios de la Ciudad de Bogota.
+
+let TrayectoriaHomicidios =
+TrayectoriaUPZ feed 
+Homicidios feed
+hashjoin[NomUPZ, CMNOMUPLA]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NomUPZ), num2string(.CMH8CONT), num2string(.CMHCONT), tostring(.CMHCONT_CL), num2string(.CMHVAR),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.249557sec / 0.24sec = 1.03982
+#23 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de lesiones personales en la Ciudad de Bogota.
+
+let TrayectoriaLesionesPersonales =
+TrayectoriaUPZ feed 
+LesionesPersonales feed
+hashjoin[NomUPZ, CMNOMUPLA]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NomUPZ), num2string(.CMLP8CONT), num2string(.CMLPCONT), tostring(.CMLPCONT_C), num2string(.CMLPVAR),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.155387sec / 0.15sec = 1.03591
+#23 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de lesiones personales en la Ciudad de Bogota.
+
+let TrayectoriaHurtoPersonas =
+TrayectoriaUPZ feed 
+HurtoPersonas feed
+hashjoin[NomUPZ, CMNOMUPLA]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NomUPZ), num2string(.CMHP8CONT), num2string(.CMHPCONT), tostring(.CMHPCONT_C), num2string(.CMHPVAR),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.160767sec / 0.16sec = 1.00479
+#23 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de hurto de residencias en la Ciudad de Bogota.
+
+let TrayectoriaHurtoResidencias =
+TrayectoriaUPZ feed 
+HurtoResidencias feed
+hashjoin[NomUPZ, CMNOMUPLA]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NomUPZ), num2string(.CMHR8CONT), num2string(.CMHRCONT), tostring(.CMHRCONT_C), num2string(.CMHRVAR),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.163325sec / 0.16sec = 1.02078
+#23 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de hurto automotores en la Ciudad de Bogota.
+
+let TrayectoriaHurtoAutomotores =
+TrayectoriaUPZ feed 
+HurtoAutomotores feed
+hashjoin[NomUPZ, CMNOMUPLA]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NomUPZ), num2string(.CMHA8CONT), num2string(.CMHACONT), tostring(.CMHACONT_C), num2string(.CMHAVAR),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.14984sec / 0.15sec = 0.998933
+#23 registros
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de hurto a bicicletas en la Ciudad de Bogota.
+
+let TrayectoriaHurtoBicicletas =
+TrayectoriaUPZ feed 
+HurtoBicicletas feed
+hashjoin[NomUPZ, CMNOMUPLA]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NomUPZ), num2string(.CMHB8CONT), num2string(.CMHBCONT), tostring(.CMHBCONT_C), num2string(.CMHBVAR),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.137726sec / 0.13sec = 1.05943
+#23 registros
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de hurto a el sector de comercio en la Ciudad de Bogota.
+
+let TrayectoriaHurtoSectorComercio =
+TrayectoriaUPZ feed 
+HurtoSectorComercio feed
+hashjoin[NomUPZ, CMNOMUPLA]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NomUPZ), num2string(.CMHC8CONT), num2string(.CMHCCONT), tostring(.CMHCCONT_C), num2string(.CMHCVAR),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.164862sec / 0.15sec = 1.09908
+#23 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de hurto a celulares en la Ciudad de Bogota.
+
+let TrayectoriaHurtoCelulares =
+TrayectoriaUPZ feed 
+HurtoCelulares feed
+hashjoin[NomUPZ, CMNOMUPLA]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NomUPZ), num2string(.CMHCE8CONT), num2string(.CMHCECONT), tostring(.CMHCECONT_), num2string(.CMHCEVAR),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.121326sec / 0.12sec = 1.01105
+#23 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de hurto a motocicletas en la Ciudad de Bogota.
+
+let TrayectoriaHurtoMotocicletas =
+TrayectoriaUPZ feed 
+HurtoMotocicletas feed
+hashjoin[NomUPZ, CMNOMUPLA]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NomUPZ), num2string(.CMHM8CONT), num2string(.CMHMCONT), tostring(.CMHMCONT_C), num2string(.CMHMVAR),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.146836sec / 0.14sec = 1.04883
+#23 registros
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de hurto a entidades financieras en la Ciudad de Bogota.
+
+let TrayectoriaHurtoEF =
+TrayectoriaUPZ feed 
+HurtoEF feed
+hashjoin[NomUPZ, CMNOMUPLA]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NomUPZ), num2string(.CMHF8CONT), num2string(.CMHFCONT), tostring(.CMHFCONT_C), num2string(.CMHFVAR),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.136231sec / 0.13sec = 1.04793
+#23 registros
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de las localidades de Bogota
+
+let TrayectoriaSimLoc =
+TrayectoriaLoc feed 
+Localidades feed
+hashjoin[NomLoc, NOMBRE]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NOMBRE), num2string(.AREA_HA),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.085192sec / 0.08sec = 1.0649
+#11 registros
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de los Barrios Catastrales de Bogota.
+
+let TrayectoriaSimBarrios =
+TrayectoriaBarr feed 
+BarrioCatastral feed
+hashjoin[NomBarr, NOMBRE]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NOMBRE), tostring(.ZONA), tostring(.CODIGO_BAR), tostring(.CODIGO_LOC),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.1831sec / 0.18sec = 1.01722
+#66 registros
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de los CAI de Bogota.
+
+let TrayectoriaSimCAIC =
+TrayectoriaCAIC feed 
+SeguridadPublicaBogota feed
+hashjoin[Estacion, NOMBRE]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NOMBRE), tostring(.CORREO), tostring(.NUMERO), tostring(.DIRECCION),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.112685sec / 0.11sec = 1.02441
+#28 registros
+  
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Generación de Trayectoria Simbolica con los datos de las EPS de Bogota.
+
+let TrayectoriaSimEPS =
+TrayectoriaEPSC feed 
+EntidadPrestadoraSalud feed
+hashjoin[Eps, NOMBRE]
+projectextend[TrayectoIDA,InstInic,InstFin;Etiquetado: tolabels(tostring(.NOMBRE), tostring(.DIRECCI__N), tostring(.TELEFONO), tostring(.NIT),tostring(.CLASIF)), Duracion:(.InstFin-.InstInic)]
+sortby[InstInic asc]
+projectextend[Etiquetado,TrayectoIDA,InstInic, InstFin, Duracion;Tray_Simbo: (the_unit(.Etiquetado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+addcounter[Identificador, 1]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.163772sec / 0.16sec = 1.02357
+#123 registros
+
+#Generación de Trayectoria Simbolica con los datos de Segmentacion segun la ubicacion y velocidad de los tramos recorridos.
+
+let TrayectoriaSimMov =
+Segmentacion feed
+projectextend[Identificador, InstInic,InstFin; TrayectoIDA: .Seg, Etiquetado: .Estado, Tray_Simbo: (the_unit(.Estado, .InstInic, .InstFin, TRUE, FALSE) feed transformstream makemvalue[Elem])]
+project[Identificador, Tray_Simbo,TrayectoIDA,InstInic,InstFin,Etiquetado]
+consume
+#Times (elapsed / cpu): 0.118327sec / 0.11sec = 1.0757
+#128 registros
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------#9. CONCATENACIÓN DE TRAYECTORIAS SIMBÓLICAS.------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Producto cartesiano de las trayectorias simbolicas creada con el objetivo de ir uniendo los mlabels creados.
+
+let ProductoCartesianoTH = 
+TrayectoriaHomicidios feed {p} 
+TrayectoriaHomicidios feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoTH2 = 
+TrayectoriaHomicidios feed {u}
+TrayectoriaHomicidios feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionTH =
+ProductoCartesianoTH feed sortby[Id asc] 
+ProductoCartesianoTH2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoTH3 = 
+AgrupacionTH feed {p} 
+AgrupacionTH feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoTH4 = 
+ProductoCartesianoTH3 feed {p} 
+ProductoCartesianoTH3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoTH5 = 
+ProductoCartesianoTH4 feed {p} 
+ProductoCartesianoTH4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionTH=
+ProductoCartesianoTH4 feed project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Cont=3]
+addcounter[Id, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicHomicidios=
+ProductoCartesianoTH5 feed {p} 
+SeleccionTH feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#A continuacion se  realiza el producto cartesiano de las trayectorias simbolicas creada co el objetivo de ir uniendo los mlabels creados, siempre se estableceran tablas de verificaicon para ir conociendo si los instantes se estan generando correctamente. Para este primer caso se concatenaran las trayectorias relacionadas con el delito de lesiones personales.
+
+let ProductoCartesianoLP = 
+TrayectoriaLesionesPersonales feed {p} 
+TrayectoriaLesionesPersonales feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoLP2 = 
+TrayectoriaLesionesPersonales feed {u}
+TrayectoriaLesionesPersonales feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionLP =
+ProductoCartesianoLP feed sortby[Id asc] 
+ProductoCartesianoLP2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoLP3 = 
+AgrupacionLP feed {p} 
+AgrupacionLP feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoLP4 = 
+ProductoCartesianoLP3 feed {p} 
+ProductoCartesianoLP3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoLP5 = 
+ProductoCartesianoLP4 feed {p} 
+ProductoCartesianoLP4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionLP=
+ProductoCartesianoLP4 feed project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Cont=3]
+addcounter[Id, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicLesionesPersonales=
+ProductoCartesianoLP5 feed {p} 
+SeleccionLP feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#A continuacion se  realiza el producto cartesiano de las trayectorias simbolicas creada co el objetivo de ir uniendo los mlabels creados, siempre se estableceran tablas de verificaicon para ir conociendo si los instantes se estan generando correctamente. Para este primer caso se concatenaran las trayectorias relacionadas con el Hurto a Personas.
+
+let ProductoCartesianoHP = 
+TrayectoriaHurtoPersonas feed {p} 
+TrayectoriaHurtoPersonas feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHP2 = 
+TrayectoriaHurtoPersonas feed {u}
+TrayectoriaHurtoPersonas feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionHP =
+ProductoCartesianoHP feed sortby[Id asc] 
+ProductoCartesianoHP2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHP3 = 
+AgrupacionHP feed {p} 
+AgrupacionHP feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHP4 = 
+ProductoCartesianoHP3 feed {p} 
+ProductoCartesianoHP3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHP5 = 
+ProductoCartesianoHP4 feed {p} 
+ProductoCartesianoHP4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionHP=
+ProductoCartesianoHP4 feed project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Cont=3]
+addcounter[Id, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicHPersonas=
+ProductoCartesianoHP5 feed {p} 
+SeleccionHP feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#A continuacion se  realiza el producto cartesiano de las trayectorias simbolicas creada co el objetivo de ir uniendo los mlabels creados, siempre se estableceran tablas de verificaicon para ir conociendo si los instantes se estan generando correctamente. Para este primer caso se concatenaran las trayectorias relacionadas con el Hurto a Residencias.
+
+let ProductoCartesianoHR = 
+TrayectoriaHurtoResidencias feed {p} 
+TrayectoriaHurtoResidencias feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHR2 = 
+TrayectoriaHurtoResidencias feed {u}
+TrayectoriaHurtoResidencias feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionHR =
+ProductoCartesianoHR feed sortby[Id asc] 
+ProductoCartesianoHR2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHR3 = 
+AgrupacionHR feed {p} 
+AgrupacionHR feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHR4 = 
+ProductoCartesianoHR3 feed {p} 
+ProductoCartesianoHR3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHR5 = 
+ProductoCartesianoHR4 feed {p} 
+ProductoCartesianoHR4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionHR=
+ProductoCartesianoHR4 feed project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Cont=3]
+addcounter[Id, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicHResidencias=
+ProductoCartesianoHR5 feed {p} 
+SeleccionHR feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#A continuacion se  realiza el producto cartesiano de las trayectorias simbolicas creada co el objetivo de ir uniendo los mlabels creados, siempre se estableceran tablas de verificaicon para ir conociendo si los instantes se estan generando correctamente. Para este primer caso se concatenaran las trayectorias relacionadas con el Hurto a Automotores.
+
+let ProductoCartesianoHAUT = 
+TrayectoriaHurtoAutomotores feed {p} 
+TrayectoriaHurtoAutomotores feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHAUT2 = 
+TrayectoriaHurtoAutomotores feed {u}
+TrayectoriaHurtoAutomotores feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionHAUT =
+ProductoCartesianoHAUT feed sortby[Id asc] 
+ProductoCartesianoHAUT2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHAUT3 = 
+AgrupacionHAUT feed {p} 
+AgrupacionHAUT feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHAUT4 = 
+ProductoCartesianoHAUT3 feed {p} 
+ProductoCartesianoHAUT3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHAUT5 = 
+ProductoCartesianoHAUT4 feed {p} 
+ProductoCartesianoHAUT4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionHAUT=
+ProductoCartesianoHAUT4 feed project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Cont=3]
+addcounter[Id, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicHAutomotores=
+ProductoCartesianoHAUT5 feed {p} 
+SeleccionHAUT feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#A continuacion se  realiza el producto cartesiano de las trayectorias simbolicas creada co el objetivo de ir uniendo los mlabels creados, siempre se estableceran tablas de verificaicon para ir conociendo si los instantes se estan generando correctamente. Para este primer caso se concatenaran las trayectorias relacionadas con el Hurto a Bicicletas.
+
+let ProductoCartesianoHBic = 
+TrayectoriaHurtoBicicletas feed {p} 
+TrayectoriaHurtoBicicletas feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHBic2 = 
+TrayectoriaHurtoBicicletas feed {u}
+TrayectoriaHurtoBicicletas feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionHBic =
+ProductoCartesianoHBic feed sortby[Id asc] 
+ProductoCartesianoHBic2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHBic3 = 
+AgrupacionHBic feed {p} 
+AgrupacionHBic feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHBic4 = 
+ProductoCartesianoHBic3 feed {p} 
+ProductoCartesianoHBic3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHBic5 = 
+ProductoCartesianoHBic4 feed {p} 
+ProductoCartesianoHBic4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionHBic=
+ProductoCartesianoHBic4 feed project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Cont=3]
+addcounter[Id, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicHBicicletas=
+ProductoCartesianoHBic5 feed {p} 
+SeleccionHBic feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHSC = 
+TrayectoriaHurtoSectorComercio feed {p} 
+TrayectoriaHurtoSectorComercio feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHSC2 = 
+TrayectoriaHurtoSectorComercio feed {u}
+TrayectoriaHurtoSectorComercio feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionHSC =
+ProductoCartesianoHSC feed sortby[Id asc] 
+ProductoCartesianoHSC2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHSC3 = 
+AgrupacionHSC feed {p} 
+AgrupacionHSC feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHSC4 = 
+ProductoCartesianoHSC3 feed {p} 
+ProductoCartesianoHSC3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHSC5 = 
+ProductoCartesianoHSC4 feed {p} 
+ProductoCartesianoHSC4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionHSC=
+ProductoCartesianoHSC4 feed project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Cont=3]
+addcounter[Id, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicHSC=
+ProductoCartesianoHSC5 feed {p} 
+SeleccionHSC feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHCel = 
+TrayectoriaHurtoCelulares feed {p} 
+TrayectoriaHurtoCelulares feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHCel2 = 
+TrayectoriaHurtoCelulares feed {u}
+TrayectoriaHurtoCelulares feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionHCel =
+ProductoCartesianoHCel feed sortby[Id asc] 
+ProductoCartesianoHCel2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHCel3 = 
+AgrupacionHCel feed {p} 
+AgrupacionHCel feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHCel4 = 
+ProductoCartesianoHCel3 feed {p} 
+ProductoCartesianoHCel3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHCel5 = 
+ProductoCartesianoHCel4 feed {p} 
+ProductoCartesianoHCel4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionHCel=
+ProductoCartesianoHCel4 feed project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Cont=3]
+addcounter[Id, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicHCel=
+ProductoCartesianoHCel5 feed {p} 
+SeleccionHCel feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHMot = 
+TrayectoriaHurtoMotocicletas feed {p} 
+TrayectoriaHurtoMotocicletas feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHMot2 = 
+TrayectoriaHurtoMotocicletas feed {u}
+TrayectoriaHurtoMotocicletas feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionHMot =
+ProductoCartesianoHMot feed sortby[Id asc] 
+ProductoCartesianoHMot2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHMot3 = 
+AgrupacionHMot feed {p} 
+AgrupacionHMot feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHMot4 = 
+ProductoCartesianoHMot3 feed {p} 
+ProductoCartesianoHMot3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoHMot5 = 
+ProductoCartesianoHMot4 feed {p} 
+ProductoCartesianoHMot4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionHMot=
+ProductoCartesianoHMot4 feed project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Cont=3]
+addcounter[Id, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicHMot=
+ProductoCartesianoHMot5 feed {p} 
+SeleccionHMot feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEF = 
+TrayectoriaHurtoEF feed {p} 
+TrayectoriaHurtoEF feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEF2 = 
+TrayectoriaHurtoEF feed {u}
+TrayectoriaHurtoEF feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionEF =
+ProductoCartesianoEF feed sortby[Id asc] 
+ProductoCartesianoEF2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEF3 = 
+AgrupacionEF feed {p} 
+AgrupacionEF feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEF4 = 
+ProductoCartesianoEF3 feed {p} 
+ProductoCartesianoEF3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEF5 = 
+ProductoCartesianoEF4 feed {p} 
+ProductoCartesianoEF4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionEF=
+ProductoCartesianoEF4 feed project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Cont=3]
+addcounter[Id, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicHEF=
+ProductoCartesianoEF5 feed {p} 
+SeleccionEF feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoLoc = 
+TrayectoriaSimLoc feed {p} 
+TrayectoriaSimLoc feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoLoc2 = 
+TrayectoriaSimLoc feed {u}
+TrayectoriaSimLoc feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionLoc =
+ProductoCartesianoLoc feed sortby[Id asc] 
+ProductoCartesianoLoc2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoLoc3=
+AgrupacionLoc feed {p} 
+AgrupacionLoc feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoLoc4 = 
+ProductoCartesianoLoc3 feed {p} 
+ProductoCartesianoLoc3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionLoc=
+ProductoCartesianoLoc3 feed project[Id, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Id=3]
+addcounter[Cont, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicLoc=
+ProductoCartesianoLoc4 feed {p} 
+SeleccionLoc feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoBarrio = 
+TrayectoriaSimBarrios feed {p} 
+TrayectoriaSimBarrios feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoBarrio2=
+ProductoCartesianoBarrio feed {p} 
+ProductoCartesianoBarrio feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoBarrio3 = 
+ProductoCartesianoBarrio feed {u}
+ProductoCartesianoBarrio feed {s} product 
+addcounter[Cont, 1]
+sortby[Cont desc]
+pfilter[.Cont=0]
+extend[Id1:.Id_s , Id2:.Id_u, Concatenacion: num2string(.Id_u) + num2string(.Id_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionBarrio =
+ProductoCartesianoBarrio2 feed sortby[Cont asc] 
+ProductoCartesianoBarrio3 feed sortby[Cont asc] 
+mergeunion
+sortby[Cont asc]
+addcounter[Id, 1]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoBarrio4=
+AgrupacionBarrio feed {p} 
+AgrupacionBarrio feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoBarrio5 = 
+AgrupacionBarrio feed {u}
+AgrupacionBarrio feed {s} product 
+addcounter[Cont, 1]
+sortby[Cont desc]
+pfilter[.Cont=0]
+extend[Id1:.Id_s , Id2:.Id_u, Concatenacion: num2string(.Id_u) + num2string(.Id_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionBarrio2 =
+ProductoCartesianoBarrio4 feed sortby[Cont asc] 
+ProductoCartesianoBarrio5 feed sortby[Cont asc] 
+mergeunion
+sortby[Cont asc]
+addcounter[Id, 1]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoBarrio6=
+AgrupacionBarrio2 feed {p} 
+AgrupacionBarrio2 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoBarrio7 = 
+AgrupacionBarrio2 feed {u}
+AgrupacionBarrio2 feed {s} product 
+addcounter[Cont, 1]
+sortby[Cont desc]
+pfilter[.Cont=0]
+extend[Id1:.Id_s , Id2:.Id_u, Concatenacion: num2string(.Id_u) + num2string(.Id_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionBarrio3 =
+ProductoCartesianoBarrio6 feed sortby[Cont asc] 
+ProductoCartesianoBarrio7 feed sortby[Cont asc] 
+mergeunion
+sortby[Cont asc]
+addcounter[Id, 1]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoBarrio8=
+AgrupacionBarrio3 feed {p} 
+AgrupacionBarrio3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoBarrio9 = 
+AgrupacionBarrio3 feed {u}
+AgrupacionBarrio3 feed {s} product 
+addcounter[Cont, 1]
+sortby[Cont desc]
+pfilter[.Cont=0]
+extend[Id1:.Id_s , Id2:.Id_u, Concatenacion: num2string(.Id_u) + num2string(.Id_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionBarrio4 =
+ProductoCartesianoBarrio8 feed sortby[Cont asc] 
+ProductoCartesianoBarrio9 feed sortby[Cont asc] 
+mergeunion
+sortby[Cont asc]
+addcounter[Id, 1]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoBarrio10 = 
+AgrupacionBarrio4 feed {p} 
+AgrupacionBarrio4 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let SeleccionBarrio=
+AgrupacionBarrio4 feed project[Id, TrayectoIDA,Tray_Simbo,Concatenacion] filter[.Id=3]
+addcounter[Cont, 1]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimbolicBarrios=
+ProductoCartesianoBarrio10 feed {p} 
+SeleccionBarrio feed {n} product 
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoCAI = 
+TrayectoriaSimCAIC feed {p} 
+TrayectoriaSimCAIC feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoCAI2=
+ProductoCartesianoCAI feed {p} 
+ProductoCartesianoCAI feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoCAI3=
+ProductoCartesianoCAI2 feed {p} 
+ProductoCartesianoCAI2 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoCAI4 = 
+ProductoCartesianoCAI2 feed {u}
+ProductoCartesianoCAI2 feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Cont_s , Id2:.Cont_u, Concatenacion: num2string(.Cont_u) + num2string(.Cont_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionCAI =
+ProductoCartesianoCAI3 feed sortby[Id asc] 
+ProductoCartesianoCAI4 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoCAI5=
+AgrupacionCAI feed {p} 
+AgrupacionCAI feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimboliCAI=
+ProductoCartesianoCAI5 feed {x}
+ProductoCartesianoCAI5 feed {y} product
+addcounter[Cont, 1]
+filter [.Cont = 2]
+projectextend[;Tray_Simbo:.Tray_Simbo_x .Tray_Simbo_y concat, TrayectoIDA:.TrayectoIDA_x .TrayectoIDA_y concat]
+addcounter[Id, 1]
+project[Id, Tray_Simbo,TrayectoIDA]
+consume
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEPS = 
+TrayectoriaSimEPS feed {p} 
+TrayectoriaSimEPS feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEPS2 = 
+TrayectoriaSimEPS feed {u}
+TrayectoriaSimEPS feed {s} product 
+addcounter[Id, 1]
+sortby[Id desc]
+pfilter[.Id=0]
+extend[Id1:.Identificador_s , Id2:.Identificador_u, Concatenacion: num2string(.Identificador_u) + num2string(.Identificador_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionEPS =
+ProductoCartesianoEPS feed sortby[Id asc] 
+ProductoCartesianoEPS2 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEPS3 = 
+AgrupacionEPS feed {p} 
+AgrupacionEPS feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEPS4 = 
+ProductoCartesianoEPS3 feed {p} 
+ProductoCartesianoEPS3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEPS5 = 
+ProductoCartesianoEPS3 feed {u}
+ProductoCartesianoEPS3 feed {s} product 
+addcounter[Cont, 1]
+sortby[Cont desc]
+pfilter[.Cont=0]
+extend[Id1:.Id_s , Id2:.Id_u, Concatenacion: num2string(.Id_u) + num2string(.Id_s), Tray_Simbo: .Tray_Simbo_u, TrayectoIDA: .TrayectoIDA_u]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let AgrupacionEPS2 =
+ProductoCartesianoEPS4 feed sortby[Cont asc] 
+ProductoCartesianoEPS5 feed sortby[Cont asc] 
+mergeunion
+sortby[Cont asc]
+addcounter[Id, 1]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEPS6 = 
+AgrupacionEPS2 feed {p} 
+AgrupacionEPS2 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEPS7 = 
+ProductoCartesianoEPS6 feed {p} 
+ProductoCartesianoEPS6 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoEPS8 = 
+ProductoCartesianoEPS7 feed {p} 
+ProductoCartesianoEPS7 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimboliEPS=
+ProductoCartesianoEPS8 feed {x}
+ProductoCartesianoEPS8 feed {y} product
+addcounter[Id, 1]
+filter [.Id = 2]
+projectextend[;Tray_Simbo:.Tray_Simbo_x .Tray_Simbo_y concat, TrayectoIDA:.TrayectoIDA_x .TrayectoIDA_y concat]
+addcounter[Id, 1]
+project[Id, Tray_Simbo,TrayectoIDA]
+consume
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Proceso de concatenación de la trayectoria creada con la segmentacion por movimientos y paradas.
+
+let ProductoCartesianoMov=
+TrayectoriaSimMov feed {p} 
+TrayectoriaSimMov feed {n} product 
+filter [(.Identificador_n - .Identificador_p) = 1 ]
+filter [(.Identificador_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Identificador_n, Id2: .Identificador_p, Concatenacion: num2string(.Identificador_p) + num2string(.Identificador_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoMov2=
+ProductoCartesianoMov feed {p} 
+ProductoCartesianoMov feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoMov3=
+ProductoCartesianoMov2 feed {p} 
+ProductoCartesianoMov2 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoMov4=
+ProductoCartesianoMov3 feed {p} 
+ProductoCartesianoMov3 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoMov5=
+ProductoCartesianoMov4 feed {p} 
+ProductoCartesianoMov4 feed {n} product 
+filter [(.Cont_n - .Cont_p) = 1 ]
+filter [(.Cont_p mod 2) # 0]
+addcounter[Id, 1]
+extend[Id1: .Cont_n, Id2: .Cont_p, Concatenacion: num2string(.Cont_p) + num2string(.Cont_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Id, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let ProductoCartesianoMov6=
+ProductoCartesianoMov5 feed {p} 
+ProductoCartesianoMov5 feed {n} product 
+filter [(.Id_n - .Id_p) = 1 ]
+filter [(.Id_p mod 2) # 0]
+addcounter[Cont, 1]
+extend[Id1: .Id_n, Id2: .Id_p, Concatenacion: num2string(.Id_p) + num2string(.Id_n), Tray_Simbo: .Tray_Simbo_p .Tray_Simbo_n concat, TrayectoIDA: .TrayectoIDA_p .TrayectoIDA_n concat ]
+project[Cont, TrayectoIDA,Tray_Simbo,Concatenacion]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Try_SimboliMov=
+ProductoCartesianoMov6 feed {x}
+ProductoCartesianoMov6 feed {y} product
+addcounter[Id, 1]
+filter [.Id = 2]
+projectextend[;Tray_Simbo:.Tray_Simbo_x .Tray_Simbo_y concat, TrayectoIDA:.TrayectoIDA_x .TrayectoIDA_y concat]
+addcounter[Cont, 15]
+project[Cont, Tray_Simbo,TrayectoIDA]
+consume
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#El siguiente paso consiste en unir las 14 trayectorias simbolcias creadas.
+
+let Tray1 =
+Try_SimbolicHomicidios feed sortby[Id asc] 
+Try_SimbolicLesionesPersonales feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray2 =
+Try_SimbolicHPersonas feed sortby[Id asc] 
+Try_SimbolicHResidencias feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 3]
+project[Cont, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray3 =
+Try_SimbolicHAutomotores feed sortby[Id asc] 
+Try_SimbolicHBicicletas feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray4 =
+Try_SimbolicHMot feed sortby[Id asc] 
+Try_SimbolicHEF feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 3]
+project[Cont, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray5 =
+Try_SimbolicLoc feed sortby[Id asc] 
+Try_SimbolicBarrios feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray6 =
+Try_SimbolicHCel feed sortby[Id asc] 
+Try_SimboliEPS feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 3]
+project[Cont, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray7 =
+Try_SimboliCAI feed sortby[Id asc]
+Try_SimbolicHSC feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 9]
+project[Cont, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray8 =
+Tray1 feed sortby[Cont asc] 
+Tray2 feed sortby[Cont asc] 
+mergeunion
+sortby[Cont asc]
+addcounter[Id, 1]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray9 =
+Tray3 feed sortby[Cont asc] 
+Tray4 feed sortby[Cont asc] 
+mergeunion
+sortby[Cont asc]
+addcounter[Id, 5]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray10 =
+Tray5 feed sortby[Cont asc] 
+Tray6 feed sortby[Cont asc] 
+mergeunion
+sortby[Cont asc]
+addcounter[Id, 11]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray11 =
+Tray8 feed sortby[Id asc] 
+Tray9 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray12 =
+Tray11 feed sortby[Cont asc] 
+Tray7 feed sortby[Cont asc] 
+mergeunion
+sortby[Cont asc]
+addcounter[Id, 1]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Tray13 =
+Tray12 feed sortby[Id asc] 
+Tray10 feed sortby[Id asc] 
+mergeunion
+sortby[Id asc]
+addcounter[Cont, 1]
+project[Cont, Tray_Simbo, TrayectoIDA]
+consume
+
+let TrayectoriaSimbolica =
+Tray13 feed sortby[Cont asc] 
+Try_SimboliMov feed sortby[Cont asc] 
+mergeunion
+sortby[Cont asc]
+addcounter[Id, 1]
+project[Id, Tray_Simbo, TrayectoIDA]
+consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------#10. PATRONES DE TRAYECTORIAS.----------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Con todas las trayectorias concatenadas en una sola trayectoria simbolica por tema (homicidios, hurto carros, barrios bogota, localidades, EPS, CAIs) se establecen consultas mediante patrones de trayectorias.
+
+let Patron1 = 'T(_ "Lesiones Personales" "Minuto De Dios" "MEDIO BAJO" "-18.37" "271" "332") * A (_ "Lesiones Personales" "Kennedy Central" "MEDIO" "-8.91" "327" "359")'
+
+#Total runtime ...   Times (elapsed / cpu): 0.014709sec / 0.02sec = 0.73545
+
+let PatronA = 
+TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron1]
+addcounter[Identificador, 1]
+project[Identificador,Tray_Simbo,TrayectoIDA]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.176141sec / 0.17sec = 1.03612
+#1 registro
+
+query TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron1] consume
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Desarrollo del Patron2
+
+let Patron2 = '*P (_ "Lesiones Personales" "La Floresta" "BAJO" "-44.71" "47" "85")* D (_ "Lesiones Personales" "Chico Lago" "MEDIO BAJO" "-20.85" "186" "235")*'
+
+#Total runtime ...   Times (elapsed / cpu): 0.002384sec / 0sec = inf
+
+let PatronB = 
+TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron2]
+addcounter[Identificador, 1]
+project[Identificador,Tray_Simbo,TrayectoIDA]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.03846sec / 0.04sec = 0.9615
+#1 registro
+
+query TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron2] consume
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Desarrollo del Patron3
+
+let Patron3 = 'T(_ "Homicidios" "Minuto De Dios" "BAJO" "-20" "4" "5") * A (_ "Homicidios" "Kennedy Central" "BAJO" "200" "3" "9")'
+#Total runtime ...   Times (elapsed / cpu): 0.003014sec / 0sec = inf
+
+let PatronC = 
+TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron3]
+addcounter[Identificador, 1]
+project[Identificador,Tray_Simbo,TrayectoIDA]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.051075sec / 0.04sec = 1.27687
+#1 registro
+query TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron3] consume
+  
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Desarrollo del Patron4
+
+let Patron4 = '*P (_ "Homicidios" "Santa Barbara" "0" "2" "BAJO")* D (_ "Homicidios" "Chapinero" "5" "80" "9" "BAJO" )*'
+#Total runtime ...   Times (elapsed / cpu): 0.019065sec / 0.03sec = 0.6355
+
+let PatronD = 
+TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron4]
+addcounter[Identificador, 1]
+project[Identificador,Tray_Simbo,TrayectoIDA]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.04028sec / 0.03sec = 1.34267
+#1 registro
+
+query TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron4] consume
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Desarrollo del Patron5
+
+let Patron5 = '*T (_ "Minuto De Dios" "Homicidios" "-20" "4" "5" "BAJO")* A (_ "Chico Lago" "Homicidios" "0" "4" "5" "BAJO")* // get_duration(T.time) > [const duration value (0 2000)]'
+#Total runtime ...   Times (elapsed / cpu): 0.002587sec / 0sec = inf
+
+let PatronE = 
+TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron5]
+addcounter[Identificador, 1]
+project[Identificador,Tray_Simbo,TrayectoIDA]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.166646sec / 0.16sec = 1.04154
+#1 registro
+
+query TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron5] consume
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Desarrollo del Patron6
+
+let Patron6 = '*T (_ "Localidades" "Engativa" "3585.23") A (_ "Localidades" "Suba" "10048") C (_ "Localidades" "Usaquen" "6514.907")*// T.labels contains tolabel("Engativa")' 
+#Total runtime ...   Times (elapsed / cpu): 0.002416sec / 0sec = inf
+
+let PatronF = 
+TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron6]
+addcounter[Identificador, 1]
+project[Identificador,Tray_Simbo,TrayectoIDA]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.074263sec / 0.07sec = 1.0609
+#1 registro
+
+query TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron6] consume
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Desarrollo del Patron7
+
+let Patron7 = 'X(_ "Barrio Catastral" "Ciudad Bachue I Etapa-005631" "Zona Centro" "005631" "10") * Y (_ "Barrio Catastral" "Ciudad Kennedy Norte-004514" "Zona Sur" "004514" "08")// Y.start > X.end' 
+#Total runtime ...   Times (elapsed / cpu): 0.00273sec / 0sec = inf
+
+let PatronG = 
+TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron7]
+addcounter[Identificador, 1]
+project[Identificador,Tray_Simbo,TrayectoIDA]
+consume
+#Total runtime ...   Times (elapsed / cpu): 0.156872sec / 0.15sec = 1.04581
+#1 registro
+query TrayectoriaSimbolica feed filter[.Tray_Simbo matches Patron7] consume
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Desarrollo del Patron8
+#Ahora es necesario hacer uso del operador estandar stpattern, STPatternAlgebra 
+inside: Devuelve un mbool con los mismos intervalos de tiempo que mlabel / mplace. El valor de una unidad es VERDADERO si y solo si la etiqueta / lugar es un elemento de las etiquetas / lugares
+
+let PatronH =
+Try_SimboliMov feed filter[. stpattern[
+BA: .Tray_Simbo inside [const labels value "Objeto Detenido"],
+BB: .Tray_Simbo inside [const labels value "Objeto en Movimiento"];
+stconstraint("BA", "BB", vec("aabb"))]]consume;
+
+##Total runtime ...   Times (elapsed / cpu): 0.186872sec / 0.18sec = 1.04581
+#
+
+#Esncesario plantear una reescritura de trayectorias con el atenrio, dejando solo los tramos de trayectoria que estan detenidos.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------#11. REESCRITURA DE TRAYECTORIAS.-----------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+A continuación se presenta el proceso de reescribir las trayectorias, el cual mediante patrones similares a los detallados en el punto 10 puede modificar la estructura interna de la trayectoria.
+
+
+let Patron8 = '*G (_ "Hurto de Motocicletas" "MEDIO" "Minuto De Dios" "3.39" "59" "61")* P (_ "Hurto de Motocicletas" "MEDIO BAJO" "Boyaca Real" "-12.5" "56" "64") * H (_ "Hurto de Motocicletas" "ALTO" "Kennedy Central" "-0.97" "102" "103") => G P'	
+#Total runtime ...   Times (elapsed / cpu): 0.009085sec / 0.01sec = 0.9085
+
+let Reescritura = 
+TrayectoriaSimbolica feed
+projectextendstream[TrayectoIDA; Trayectoria: rewrite(.Tray_Simbo, Patron8)]
+projectextendstream[TrayectoIDA;Fragmentar:units(.Trayectoria)]
+projectextend[Fragmentar, TrayectoIDA;InstInic: inst(initial(.Fragmentar)), InstFin: inst(final(.Fragmentar))]
+projectextend[Fragmentar, TrayectoIDA;Periodo:createPeriods( .InstInic, .InstFin, TRUE, FALSE)]	
+projectextend[Fragmentar; Movimiento: .TrayectoIDA atperiods .Periodo]
+consume 
+
+#Total runtime ...   Times (elapsed / cpu): 0.297956sec / 0.3sec = 0.993187
+#2 registros
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Patron9 = 'L (_ "3.39" "59" "61" "Hurto de Motocicletas" "MEDIO" "Minuto De Dios")* K (_ "-35.71" "14" "9" "BAJO" "Chapinero" "Hurto de Motocicletas") *T (_ "-0.97" "102" "103" "ALTO" "Hurto de Motocicletas" "Kennedy Central") => L K' 
+#Total runtime ...   Times (elapsed / cpu): 0.016629sec / 0.02sec = 0.83145
+
+let Reescritura2 = 
+TrayectoriaSimbolica feed
+projectextendstream[TrayectoIDA; Trayectoria: rewrite(.Tray_Simbo, Patron9)]
+projectextendstream[TrayectoIDA;Fragmentar:units(.Trayectoria)]
+projectextend[Fragmentar, TrayectoIDA;InstInic: inst(initial(.Fragmentar)), InstFin: inst(final(.Fragmentar))]
+projectextend[Fragmentar, TrayectoIDA;Periodo:createPeriods( .InstInic, .InstFin, TRUE, FALSE)]	
+projectextend[Fragmentar; Movimiento: .TrayectoIDA atperiods .Periodo]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.073937sec / 0.06sec = 1.23228
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+let Patron10 ='*J (_ "005618" "10" "Barrio Catastral" "Quirigua-005618" "Zona Centro")* D (_ "005406" "10" "Barrio Catastral" "Bonanza-005406" "Zona Centro") * X (_ "008418" "01" "Barrio Catastral" "San Patricio-008418" "Zona Norte")* C (_ "008214" "02" "Barrio Catastral" "Chapinero Norte-008214" "Zona Centro")* => C'    
+#Total runtime ...   Times (elapsed / cpu): 0.00297sec / 0sec = inf
+
+let Reescritura3 = 
+TrayectoriaSimbolica feed
+projectextendstream[TrayectoIDA; Trayectoria: rewrite(.Tray_Simbo, Patron10)]
+projectextend[Trayectoria, TrayectoIDA;InstInic: inst(initial(.Trayectoria)), InstFin: inst(final(.Trayectoria))]
+projectextend[Trayectoria, TrayectoIDA;Periodo:createPeriods( .InstInic, .InstFin, TRUE, FALSE)]	
+projectextend[Trayectoria; Movimiento: .TrayectoIDA atperiods .Periodo]
+consume
+
+#Total runtime ...   Times (elapsed / cpu): 0.291777sec / 0.23sec = 1.2686
+#1 Registro
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
